@@ -83,11 +83,99 @@ resource "aws_instance" "web-server" {
   subnet_id                   = aws_subnet.public-subnet.id
   vpc_security_group_ids      = [aws_security_group.web-sg.id]
   iam_instance_profile        = aws_iam_instance_profile.ec2_instance_profile.name
-  key_name                    = "login_oct_us"
+  key_name                    = var.ec2_keyName
   associate_public_ip_address = true
   tags = {
     Name = "web-server"
   }
+
+  user_data = <<-EOF
+              #!bin/bash
+              yum update -y
+              dnf install nginx -y
+              systemctl start nginx
+              systemctl enable nginx
+              
+              cat > /usr/share/nginx/html/index.html << 'HTML'
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>EC2 - Splunk</title>
+              </head>
+              <body>
+              <h2>Submit the Form</h2>
+                <form method="POST" action="/form-submit">
+                  <label>Message:</label>
+                  <input type="text" name="msg" required />
+                  <br><br>
+                  <button type="submit">Submit</button>
+                </form>
+              </body>
+              HTML
+
+              cat > /usr/share/nginx/html/submit-success.html << 'HTML'
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>Submission Successful</title>
+              </head>
+              <body>
+                  <h2>Your message has been submitted successfully!</h2>
+              </body>
+              HTML
+
+              cat > /etc/nginx/conf.d/form-submit.conf << 'NGINXCONF'
+              server {
+                listen 80;
+                server_name _;
+
+                root /usr/share/nginx/html;
+
+              location /form-submit {
+                if ($request_method = POST) {
+                    return 307 /submit-success.html;
+                }
+              }
+
+
+                location / {
+                  try_files $uri $uri/ =404;
+                }
+              }
+              NGINXCONF
+
+              systemctl restart nginx
+
+              yum install amazon-cloudwatch-agent -y
+
+              cat > /opt/aws/amazon-cloudwatch-agent/etc/nginx-cw.json << 'CW'
+              {
+                  "logs": {
+                    "logs_collected": {
+                      "files": {
+                        "collect_list": [
+                          {
+                            "file_path": "/var/log/nginx/access.log",
+                            "log_group_name": "nginx-logs",
+                            "log_stream_name": "{instance_id}-access"
+                          },
+                          {
+                            "file_path": "/var/log/nginx/error.log",
+                            "log_group_name": "nginx-logs",
+                            "log_stream_name": "{instance_id}-error"
+                          }
+                        ]
+                      }
+                    }
+                  }
+              }
+              CW
+
+               /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/nginx-cw.json -s
+
+
+
+  EOF
 }
 
 # IAM Role for ec2

@@ -22,6 +22,11 @@ variable "ec2_instance_type" {
   default = "t3.micro"
 }
 
+variable "ec2_keyName" {
+  type    = string
+  default = "login_oct_us"
+}
+
 variable "splunk_url" {
   type    = string
   default = "http://44.213.121.228:8088/services/collector/event"
@@ -31,3 +36,4 @@ variable "splunk_token" {
   type    = string
   default = "f4835653-dd9b-428f-b0ab-19256b1def56"
 }
+
