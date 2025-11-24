@@ -284,8 +284,8 @@ resource "aws_lambda_function" "lambda-splunk" {
 
 data "archive_file" "name" {
   type        = "zip"
-  source_file = "${path.module}/lambda/lambda.py"
-  output_path = "${path.module}/lambda.zip"
+  source_file = "${path.module}/lambda/lambda_function.py"
+  output_path = "${path.module}/lambda_function.zip"
 }
 
 
