@@ -25,7 +25,7 @@ def send_to_splunk(event_payload):
         print("Error sending to Splunk:", e)
 
 def lambda_handler(event, context):
-    cw_data = event.get("awslogs", {}). # Get Cloudwatch logs
+    cw_data = event.get("awslogs", {}) # Get Cloudwatch logs
     if not cw_data:
         print("No awslogs field.")
         return
@@ -35,7 +35,7 @@ def lambda_handler(event, context):
         print("No data to decode.")
         return
 
-    data = base64.b64decode(compressed). # Decode the data
+    data = base64.b64decode(compressed) # Decode the data
     try:
         decompressed = gzip.decompress(data) # Decompress the data
     except Exception as e:
